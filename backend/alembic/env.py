@@ -6,8 +6,7 @@ from alembic import context
 
 from app.core.config import get_settings
 from app.features.bookings.models import Booking, BookingGroup  # noqa: F401
-from app.features.events.models import Event  # noqa: F401
-from app.features.seats.models import Seat  # noqa: F401
+from app.features.events.models import Event, Seat  # noqa: F401
 from app.shared.base_model import Base
 
 config = context.config
