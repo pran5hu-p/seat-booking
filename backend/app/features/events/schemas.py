@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.features.seats.schemas import SeatMapSeat
+
 
 class EventCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
@@ -34,3 +36,20 @@ class EventListItem(BaseModel):
     booked_seats: int
     blocked_seats: int
     available_seats: int
+
+
+class EventPublicOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    event_date: datetime
+
+
+class EventDetail(BaseModel):
+    id: int
+    name: str
+    event_date: datetime
+    rows: int
+    seats_per_row: int
+    seats: list[SeatMapSeat]

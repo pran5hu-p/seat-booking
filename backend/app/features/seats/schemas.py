@@ -1,4 +1,18 @@
-"""Pydantic schemas for seats.
+"""Pydantic schemas for seats."""
 
-Filled in by Phase 3 (seat map read side) and Phase 4 (booking payload).
-"""
+from enum import Enum
+
+from pydantic import BaseModel
+
+
+class SeatStatus(str, Enum):
+    AVAILABLE = "available"
+    BOOKED = "booked"
+    BLOCKED = "blocked"
+
+
+class SeatMapSeat(BaseModel):
+    id: int
+    row_label: str
+    seat_number: int
+    status: SeatStatus

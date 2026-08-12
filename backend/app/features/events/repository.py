@@ -51,6 +51,10 @@ class EventRepository:
     def get_event(self, db: Session, event_id: int) -> Event | None:
         return db.get(Event, event_id)
 
+    def list_public_events(self, db: Session) -> list[Event]:
+        stmt = select(Event).order_by(Event.event_date, Event.id)
+        return list(db.scalars(stmt))
+
     def list_events_with_counts(self, db: Session) -> list[Row]:
         booked_subquery = (
             select(func.count(Booking.id))

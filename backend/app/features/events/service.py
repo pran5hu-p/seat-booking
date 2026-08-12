@@ -6,7 +6,14 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import NotFoundError
 from app.features.events.models import Event
 from app.features.events.repository import EventRepository
-from app.features.events.schemas import EventCreate, EventListItem, EventOut
+from app.features.events.schemas import (
+    EventCreate,
+    EventDetail,
+    EventListItem,
+    EventOut,
+    EventPublicOut,
+)
+from app.features.seats.service import SeatService
 from app.shared.utils import commit_or_rollback
 
 
@@ -58,3 +65,19 @@ class EventService:
 
     def get_dashboard_counts(self, event_id: int) -> Row:
         return self.repository.get_dashboard_counts(self.db, event_id)
+
+    def list_public(self) -> list[EventPublicOut]:
+        events = self.repository.list_public_events(self.db)
+        return [EventPublicOut.model_validate(event) for event in events]
+
+    def get_detail(self, event_id: int) -> EventDetail:
+        event = self.get_event_or_404(event_id)
+        seats = SeatService(self.db).get_seat_map(event_id)
+        return EventDetail(
+            id=event.id,
+            name=event.name,
+            event_date=event.event_date,
+            rows=event.rows,
+            seats_per_row=event.seats_per_row,
+            seats=seats,
+        )
