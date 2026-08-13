@@ -24,3 +24,27 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Diagonal hatch for blocked seats so they read as distinct from booked at a
+   glance, without introducing a second unavailable color family. */
+.seat-blocked-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(0 0 0 / 0.08) 0,
+    rgb(0 0 0 / 0.08) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  .seat-blocked-hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgb(255 255 255 / 0.12) 0,
+      rgb(255 255 255 / 0.12) 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  }
+}
