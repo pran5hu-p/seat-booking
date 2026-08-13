@@ -2,7 +2,7 @@
 
 ## Project
 Event Seat Booking System
-FastAPI (Python) backend, Next.js 15 App Router, TypeScript, Tailwind CSS,
+FastAPI (Python) backend, Next.js 15 App Router, Javascript, Tailwind CSS,
 shadcn/ui, Zustand, React Hook Form, Zod, MySQL
 
 ## Goal
@@ -51,7 +51,7 @@ Phase 4, before touching the booking endpoint.
 
 ## General Rules
 - Feature-driven architecture, on both frontend and backend
-- Strict TypeScript on frontend; full type hints on backend (pydantic and
+- Javascript on frontend; full type hints on backend (pydantic and
   SQLAlchemy typed models)
 - Functional React components only
 - Prefer Server Components; Client Components only when required
