@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 
 import httpx
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://seat-booking-production.up.railway.app"
 CONCURRENT_REQUESTS = 8  # how many requests race for the same seat(s)
 
 
