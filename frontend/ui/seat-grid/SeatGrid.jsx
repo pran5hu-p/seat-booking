@@ -6,20 +6,28 @@ import { SEAT_STATUS } from "@/lib/constants/seatStatus";
 
 import { seatStateClasses } from "./seatClasses";
 
+// Stable module-level defaults reproduce the booking view's original behavior,
+// so SeatMapPanel keeps working without passing anything. Module-level, not
+// inline, so the predicate identity stays constant across renders and the
+// memoized cells below never re-render for a new default function.
+const defaultIsDisabled = (seat) => seat.status !== SEAT_STATUS.AVAILABLE;
+const defaultIsActive = () => false;
+
 // Memoized cell: every prop is a primitive (or a stable zustand action), so on
 // each poll only cells whose status actually changed re-render. Passing the
 // seat object itself would defeat memo because the poll returns fresh object
-// identities every time.
-const SeatCell = memo(function SeatCell({ seatId, label, status, isSelected, onToggleSeat }) {
-  const isAvailable = status === SEAT_STATUS.AVAILABLE;
+// identities every time. The isDisabled/isActive predicates are evaluated in
+// SeatGrid, never here, so their results arrive as plain booleans and keep the
+// memo contract intact even when a caller passes a fresh closure.
+const SeatCell = memo(function SeatCell({ seatId, label, status, isSelected, isActive, isDisabled, onToggleSeat }) {
   return (
     <button
       type="button"
       aria-label={`Seat ${label}`}
       aria-pressed={isSelected}
-      disabled={!isAvailable}
+      disabled={isDisabled}
       onClick={() => onToggleSeat(seatId)}
-      className={seatStateClasses({ status, isSelected })}
+      className={seatStateClasses({ status, isSelected, isActive, isDisabled })}
     >
       {label}
     </button>
@@ -39,7 +47,13 @@ function groupSeatsByRow(seats) {
   return rowOrder.map((rowLabel) => ({ rowLabel, seats: seatsByRow.get(rowLabel) }));
 }
 
-export function SeatGrid({ seats, selectedSeatIds, onToggleSeat }) {
+export function SeatGrid({
+  seats,
+  selectedSeatIds,
+  onToggleSeat,
+  isDisabled = defaultIsDisabled,
+  isActive = defaultIsActive,
+}) {
   const selectedSet = useMemo(() => new Set(selectedSeatIds), [selectedSeatIds]);
   const rows = useMemo(() => groupSeatsByRow(seats), [seats]);
 
@@ -59,6 +73,8 @@ export function SeatGrid({ seats, selectedSeatIds, onToggleSeat }) {
                   label={`${seat.row_label}${seat.seat_number}`}
                   status={seat.status}
                   isSelected={selectedSet.has(seat.id)}
+                  isActive={isActive(seat)}
+                  isDisabled={isDisabled(seat)}
                   onToggleSeat={onToggleSeat}
                 />
               ))}

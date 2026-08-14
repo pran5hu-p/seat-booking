@@ -161,12 +161,82 @@ Error handling for this endpoint:
 - Loading state on first load. Usable down to tablet width.
 
 ## Phase 7: Admin dashboard UI
+
+### 7a. Make the seat grid caller-configurable (do this first, before any
+admin component)
+
+The admin block/unblock UI reuses the same SeatGrid/SeatCell component as the
+booking page, but the two views have opposite click rules, so the grid must
+stop hardcoding interactivity.
+
+- Add two optional predicates to SeatGrid and SeatCell, both taking a seat
+  object and returning a boolean:
+  - `isDisabled(seat)`: controls the button's `disabled` attribute and the
+    cursor-not-allowed styling. Disabled seats are genuinely non-interactive
+    (the HTML `disabled` attribute), matching the Phase 6 accessibility
+    pattern. Never "clickable but silently ignored in the handler".
+  - `isActive(seat)`: controls the "toggled on" visual state - the
+    server-confirmed state that shows a seat as already engaged (blocked) in
+    admin mode.
+- Defaults must reproduce today's booking behavior exactly, so the booking
+  view is unaffected when it doesn't pass either prop:
+  - `isDisabled` defaults to `seat.status !== "available"` (booked/blocked
+    seats not clickable).
+  - `isActive` defaults to `false`; the booking view's existing
+    `selectedSeatIds` wiring continues to drive the highlight as today.
+- No third new prop is needed for the pending action state. The existing
+  `selectedSeatIds` prop (array of seat ids, already turned into a Set in
+  SeatGrid) stays as-is and serves as the pending "selected for this action"
+  flag in BOTH views. It stays a separate prop from `isActive`, for three
+  reasons:
+  - Booking uses only `selectedSeatIds` (isActive defaults false) - unchanged.
+  - Admin uses both with different meanings: `selectedSeatIds` = the user's
+    in-progress batch selection (action intent), `isActive` = blocked per the
+    server. They are not the same thing and must not share a single flag;
+    conflating them would make the admin grid show a seat about to be
+    unblocked identically to one still blocked.
+  - It preserves the existing memo contract (Set lookup -> primitive booleans
+    into the memoized SeatCell).
+- seatClasses.js: derive cursor and visual state from the flags instead of
+  hardcoding `status !== "available"`. Visual precedence per cell:
+  1. Pending selection (`selectedSeatIds`) - renders the solid "Selected"
+     style, wins over everything (same rule as today).
+  2. `isActive` - renders the "toggled on" style (blocked in admin mode),
+     distinct from both pending selection and the passive blocked hatch.
+  3. Status-based style (available / booked / blocked) as the fallback.
+  A seat can be both active and clickable (that is the whole point of the
+  admin mode). Legend and existing callers keep working unchanged.
+- Keep SeatCell memoized: evaluate the predicates in SeatGrid and pass the
+  resulting primitive booleans down, so a stable predicate function doesn't
+  break the memo and each poll still re-renders only cells whose state changed.
+
+Admin supplies its own predicates in block/unblock mode:
+- `isActive = (seat) => seat.status === "blocked"` (currently-blocked seats
+  show as toggled on, and are clickable to unblock them).
+- `isDisabled = (seat) => seat.status === "booked"` (booked seats are
+  genuinely non-interactive via the `disabled` attribute; available and
+  blocked seats stay clickable).
+
+### 7b. Dashboard UI
 - Create-event form (name, date, rows, seats per row), React Hook Form plus
   Zod.
 - Dashboard: total/booked/available/blocked counts, table of bookings (seat,
   name, email, timestamp).
-- Seat-blocking UI, can reuse the seat-grid component in a "click to toggle
-  blocked" mode.
+- Seat-blocking UI, reusing the seat-grid component from 7a in a batch
+  select-then-submit flow (consistent with the booking side, where the same
+  `selectedSeatIds` prop feeds a `seat_ids` list to the API):
+  - Admin clicks available or blocked seats to toggle them into the pending
+    selection (booked seats are disabled and can't be toggled). `isActive`
+    still marks the currently-blocked seats per the server while the
+    selection is separate.
+  - One action button applies the batch: the pending selection is partitioned
+    by current server status - seats currently blocked go to
+    POST .../seats/unblock, everything else to POST .../seats/block - and the
+    seat_ids list is sent to each endpoint (both already accept a seat_ids
+    list per Phase 2).
+  - On success: refetch the seat map so blocked/available states refresh, and
+    clear the pending selection. On failure: show which seat(s) failed and
+    refetch so the grid reflects the server's current state.
 
 ## Phase 8: Final checks
 - .env.example exists for both frontend and backend (no real secrets
